@@ -22,11 +22,23 @@ jobs:
           cache: true
       - run: vp check
       - run: vp test
-      - uses: changesets/action@v1
+      - id: changesets
+        uses: changesets/action@v1
         with:
           version: vp exec changeset version
           publish: vp run release
-          title: "chore: release"
-          commit: "chore: release"
+          title: "chore(release): version packages"
+          commit: "chore(release): version packages"
+          createGithubReleases: true # tag and release on GitHub after npm publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # changesets/action only accepts a static title, so add the version afterwards.
+      - if: steps.changesets.outputs.pullRequestNumber
+        run: |
+          git fetch origin changeset-release/master
+          name=$(git show origin/changeset-release/master:package.json | jq -r .name)
+          version=$(git show origin/changeset-release/master:package.json | jq -r .version)
+          gh pr edit "$PR" --title "chore(release): $name@$version"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.changesets.outputs.pullRequestNumber }}
