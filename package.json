@@ -1,16 +1,16 @@
 {
-  "name": "@cyrenex/di",
+  "name": "@cyrenex/pondi",
   "version": "0.0.0",
   "description": "Type-safe, string-keyed dependency injection with async factories and scoped disposal.",
-  "homepage": "https://github.com/author/library#readme",
+  "homepage": "https://github.com/YanChenBai/pondi#readme",
   "bugs": {
-    "url": "https://github.com/author/library/issues"
+    "url": "https://github.com/YanChenBai/pondi/issues"
   },
   "license": "MIT",
   "author": "byc <bycrxemail@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/author/library.git"
+    "url": "git+https://github.com/YanChenBai/pondi.git"
   },
   "files": [
     "dist"

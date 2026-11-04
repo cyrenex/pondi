@@ -1,24 +1,56 @@
-# @cyrenex/di
+<h1 align="center">pondi</h1>
 
-English | [简体中文](./README.zh-CN.md)
+<p align="center">Drop a pebble, get a ripple. Type-safe, string-keyed dependency injection for TypeScript.</p>
 
-Type-safe, string-keyed dependency injection. No decorators, no `reflect-metadata`. Supports async factories, async initialization, hierarchical containers, and resource disposal.
+<p align="center">
+  [<a href="https://github.com/YanChenBai/pondi/blob/master/README.zh-CN.md">简体中文</a>] [<a href="https://www.npmjs.com/package/@cyrenex/pondi">npm</a>]
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@cyrenex/pondi"><img src="https://img.shields.io/npm/v/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669"></a>
+  <a href="https://www.npmjs.com/package/@cyrenex/pondi"><img src="https://img.shields.io/npm/dm/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669"></a>
+  <a href="https://bundlephobia.com/package/@cyrenex/pondi"><img src="https://img.shields.io/bundlephobia/minzip/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669&label=minzip"></a>
+  <a href="https://github.com/YanChenBai/pondi/blob/master/LICENSE"><img src="https://img.shields.io/github/license/YanChenBai/pondi.svg?style=flat&colorA=080f12&colorB=1fa669"></a>
+</p>
+
+> [!NOTE]
+> No decorators, no `reflect-metadata`, no runtime dependencies. Just keys, factories, and types.
+
+Most DI containers in TypeScript lean on decorators and emitted metadata, and you pay for that with build configuration and a class-only style. pondi goes the other way: **a dependency is a string key with a type attached**. You declare what you need with a `pebble`, describe how to build it with a `ripple`, and let a `Pond` wire everything together.
+
+Think of it as dropping a pebble into a pond: the pebble names what you need, the ripple is what it becomes.
+
+## What's Special
+
+- **Inferred types everywhere**: factory parameters are inferred from the dependency list, and wrong orders or shapes fail at compile time.
+- **Async all the way**: async factories, async `init` hooks, and concurrent resolves that run each factory only once.
+- **Hierarchical ponds**: `fork()` a child to override providers for tests, requests, or tenants; only the affected singletons are rebuilt.
+- **Deterministic disposal**: works with `await using`; children first, then instances in reverse creation order.
+- **Helpful errors**: every `PondError` carries a `code` and the full dependency `path`.
+
+## Installation
+
+```bash
+pnpm add @cyrenex/pondi
+```
+
+## Quick Start
 
 ```ts
-import { Cyrene, ripple, verse } from "@cyrenex/di";
+import { pebble, Pond, ripple } from "@cyrenex/pondi";
 
 interface AgentOptions {
   url: string;
 }
 
 // A contract: a type, no implementation
-const AgentConfig = verse<AgentOptions>("agent:config");
+const AgentConfig = pebble<AgentOptions>("agent:config");
 
 // A plugin: provides an implementation for the contract
 const agentConfigPlugin = (options: AgentOptions) => ripple(AgentConfig, () => options);
 
 // A token with a default implementation
-const Message = ripple("message", () => "Hello, Cyrene!");
+const Message = ripple("message", () => "Hello, Pond!");
 
 // Declare dependencies; factory parameter types are inferred
 const Agent = ripple("agent", [Message, AgentConfig], async (message, config) => {
@@ -31,38 +63,32 @@ const Agent = ripple("agent", [Message, AgentConfig], async (message, config) =>
   };
 });
 
-await using app = new Cyrene().use(agentConfigPlugin({ url: "ws://localhost" }));
+await using app = new Pond().use(agentConfigPlugin({ url: "ws://localhost" }));
 const agent = await app.resolve(Agent); // { send: () => void }
 ```
 
-## Installation
+## Core Concepts
 
-```bash
-pnpm add @cyrenex/di
-```
+| Concept     | Description                                                                    |
+| ----------- | ------------------------------------------------------------------------------ |
+| `pebble<T>` | A contract: a typed string key with no implementation                          |
+| `ripple`    | An implementation: key + dependencies + factory + mode; also usable as a token |
+| `Pond`      | The container: registers implementations, resolves instances, owns lifecycles  |
 
-## Core concepts
+**The key is the identity.** `ripple("message", ...)`, `pebble("message")`, and the string `"message"` all refer to the same token, so `app.resolve(Message)` and `app.resolve("message")` return the same instance. Namespace your keys to avoid collisions, e.g. `"agent:config"`.
 
-| Concept    | Description                                                                    |
-| ---------- | ------------------------------------------------------------------------------ |
-| `verse<T>` | A contract: a typed string key with no implementation                          |
-| `ripple`   | An implementation: key + dependencies + factory + mode; also usable as a token |
-| `Cyrene`   | The container: registers implementations, resolves instances, owns lifecycles  |
-
-**The key is the identity.** `ripple("message", ...)`, `verse("message")`, and the string `"message"` all refer to the same token, so `app.resolve(Message)` and `app.resolve("message")` return the same instance. Namespace your keys to avoid collisions, e.g. `"agent:config"`.
-
-## Declaring ripples
+## Declaring Ripples
 
 ```ts
 ripple(key, factory, options?)
 ripple(key, deps, factory, options?)
-ripple(verse, factory, options?)        // implements a verse; the return type must match the contract
-ripple(verse, deps, factory, options?)
+ripple(pebble, factory, options?)        // implements a pebble; the return type must match the contract
+ripple(pebble, deps, factory, options?)
 ```
 
-- `deps` may mix verses, ripples, and strings. The factory receives the resolved values in order.
+- `deps` may mix pebbles, ripples, and strings. The factory receives the resolved values in order.
 - Factories may be async. The container awaits them, so dependents always receive values, never promises.
-- `options.mode` defaults to `"singleton"`. See [Lifecycle modes](#lifecycle-modes).
+- `options.mode` defaults to `"singleton"`. See [Lifecycle Modes](#lifecycle-modes).
 
 ### ripple.class
 
@@ -77,23 +103,23 @@ class Agent {
 }
 
 const AgentRipple = ripple.class("agent", [Message, AgentConfig], Agent);
-const Logger = ripple.class(LoggerVerse, ConsoleLogger);
+const Logger = ripple.class(LoggerPebble, ConsoleLogger);
 ```
 
 Constructor parameters are type-checked against the dependency list at compile time, so listing dependencies in the wrong order is an error.
 
-## Resolving and types
+## Resolving and Types
 
 ```ts
 await app.resolve(Agent); // typed by the ripple
-await app.resolve(AgentConfig); // typed by the verse
+await app.resolve(AgentConfig); // typed by the pebble
 await app.resolve("message"); // typed by Registry, or unknown if not declared
 ```
 
 To give plain string keys a type, augment `Registry`. Augmented keys get autocompletion, and `ripple` checks its return type against the declaration:
 
 ```ts
-declare module "@cyrenex/di" {
+declare module "@cyrenex/pondi" {
   interface Registry {
     message: string;
     "agent:config": AgentOptions;
@@ -101,7 +127,7 @@ declare module "@cyrenex/di" {
 }
 ```
 
-## Resolution rules
+## Resolution Rules
 
 To resolve a token, the container looks for an implementation in this order:
 
@@ -109,9 +135,9 @@ To resolve a token, the container looks for an implementation in this order:
 2. If the token itself is a ripple, its own default implementation.
 3. Otherwise it throws `MISSING_PROVIDER`, with the full dependency path, e.g. `agent -> agent:config`.
 
-So a ripple can be resolved without calling `use` first. Verses and plain strings need some container to provide them.
+So a ripple can be resolved without calling `use` first. Pebbles and plain strings need some container to provide them.
 
-## Registering and overriding
+## Registering and Overriding
 
 ### use
 
@@ -138,7 +164,7 @@ In the child, **singletons affected by an override are rebuilt**, while unaffect
 
 Use cases: test mocks, request-scoped context, multi-tenancy, replacing part of a plugin.
 
-## Lifecycle modes
+## Lifecycle Modes
 
 | mode                  | Where instances are cached                 | Disposed by              |
 | --------------------- | ------------------------------------------ | ------------------------ |
@@ -150,10 +176,10 @@ Use cases: test mocks, request-scoped context, multi-tenancy, replacing part of 
 - Concurrent resolves of the same singleton run the factory only once.
 - Failed factories or initializations are not cached; the next resolve retries.
 
-## Async initialization and disposal
+## Async Initialization and Disposal
 
 ```ts
-import { asyncDispose, dispose, init } from "@cyrenex/di";
+import { asyncDispose, dispose, init } from "@cyrenex/pondi";
 
 class Db {
   #conn!: Connection;
@@ -183,7 +209,7 @@ After disposal, `resolve`, `use`, and `fork` throw `DISPOSED`.
 
 ## Errors
 
-All container errors are `CyreneError` instances with a `code` and a dependency `path`:
+All container errors are `PondError` instances with a `code` and a dependency `path`:
 
 | code                  | Thrown when                                                         |
 | --------------------- | ------------------------------------------------------------------- |
@@ -198,7 +224,7 @@ All container errors are `CyreneError` instances with a `code` and a dependency 
 try {
   await app.resolve(Agent);
 } catch (error) {
-  if (error instanceof CyreneError && error.code === "MISSING_PROVIDER") {
+  if (error instanceof PondError && error.code === "MISSING_PROVIDER") {
     console.error(error.path); // ["agent", "agent:config"]
   }
 }
@@ -215,4 +241,22 @@ vp pack    # build
 
 ## License
 
-MIT
+[MIT](./LICENSE)
+
+## Special Thanks
+
+Thanks to all contributors for their contributions to pondi ❤️
+
+<a href="https://github.com/YanChenBai/pondi/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=YanChenBai/pondi" />
+</a>
+
+## Star History
+
+<a href="https://star-history.dera.page/#YanChenBai/pondi&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=YanChenBai/pondi&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=YanChenBai/pondi&type=Date" />
+    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=YanChenBai/pondi&type=Date" />
+  </picture>
+</a>

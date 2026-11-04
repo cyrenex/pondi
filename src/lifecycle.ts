@@ -17,7 +17,7 @@ export const dispose: typeof Symbol.dispose =
  * handed to dependents. Use it for async initialization a constructor cannot do.
  * If it throws, the instance is disposed and the error propagates.
  */
-export const init: unique symbol = Symbol.for("@cyrenex/di.init");
+export const init: unique symbol = Symbol.for("@cyrenex/pondi.init");
 
 export interface Initializable {
   [init](): void | PromiseLike<void>;

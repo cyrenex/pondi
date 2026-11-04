@@ -1,24 +1,56 @@
-# @cyrenex/di
+<h1 align="center">pondi</h1>
 
-[English](./README.md) | 简体中文
+<p align="center">投下一颗石子，泛起一圈涟漪。以字符串为 key 的 TypeScript 类型安全依赖注入库。</p>
 
-以字符串为 key 的类型安全依赖注入库。不需要装饰器，也不依赖 `reflect-metadata`；支持异步工厂、异步初始化、分层容器和资源释放。
+<p align="center">
+  [<a href="https://github.com/YanChenBai/pondi/blob/master/README.md">English</a>] [<a href="https://www.npmjs.com/package/@cyrenex/pondi">npm</a>]
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@cyrenex/pondi"><img src="https://img.shields.io/npm/v/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669"></a>
+  <a href="https://www.npmjs.com/package/@cyrenex/pondi"><img src="https://img.shields.io/npm/dm/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669"></a>
+  <a href="https://bundlephobia.com/package/@cyrenex/pondi"><img src="https://img.shields.io/bundlephobia/minzip/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669&label=minzip"></a>
+  <a href="https://github.com/YanChenBai/pondi/blob/master/LICENSE"><img src="https://img.shields.io/github/license/YanChenBai/pondi.svg?style=flat&colorA=080f12&colorB=1fa669"></a>
+</p>
+
+> [!NOTE]
+> 不需要装饰器，不依赖 `reflect-metadata`，没有运行时依赖。只有 key、工厂和类型。
+
+TypeScript 里的大多数 DI 容器依赖装饰器和编译期生成的元数据，代价是额外的构建配置和只能写 class 的风格。pondi 反其道而行：**一个依赖就是一个带类型的字符串 key**。用 `pebble` 声明你需要什么，用 `ripple` 描述怎么构建它，再交给 `Pond` 把一切串起来。
+
+可以这样理解：往池塘里投一颗石子，石子（pebble）说明你需要什么，涟漪（ripple）是它最终变成的东西。
+
+## 特性
+
+- **全程类型推导**：工厂参数类型由依赖列表推导，顺序或结构写错会在编译期报错。
+- **彻底的异步支持**：异步工厂、异步 `init` 钩子，并发 resolve 同一个依赖时工厂只执行一次。
+- **分层池塘**：用 `fork()` 创建子容器，为测试、请求或租户覆盖实现；只有受影响的单例会被重建。
+- **确定的释放顺序**：支持 `await using`；先释放子容器，再按创建顺序的逆序释放实例。
+- **有用的错误信息**：每个 `PondError` 都带有 `code` 和完整的依赖路径 `path`。
+
+## 安装
+
+```bash
+pnpm add @cyrenex/pondi
+```
+
+## 快速开始
 
 ```ts
-import { Cyrene, ripple, verse } from "@cyrenex/di";
+import { pebble, Pond, ripple } from "@cyrenex/pondi";
 
 interface AgentOptions {
   url: string;
 }
 
 // 契约：只有类型，没有实现
-const AgentConfig = verse<AgentOptions>("agent:config");
+const AgentConfig = pebble<AgentOptions>("agent:config");
 
 // 插件：为契约提供实现
 const agentConfigPlugin = (options: AgentOptions) => ripple(AgentConfig, () => options);
 
 // 带默认实现的 token
-const Message = ripple("message", () => "Hello, Cyrene!");
+const Message = ripple("message", () => "Hello, Pond!");
 
 // 声明依赖，工厂参数的类型会自动推导
 const Agent = ripple("agent", [Message, AgentConfig], async (message, config) => {
@@ -31,36 +63,30 @@ const Agent = ripple("agent", [Message, AgentConfig], async (message, config) =>
   };
 });
 
-await using app = new Cyrene().use(agentConfigPlugin({ url: "ws://localhost" }));
+await using app = new Pond().use(agentConfigPlugin({ url: "ws://localhost" }));
 const agent = await app.resolve(Agent); // { send: () => void }
-```
-
-## 安装
-
-```bash
-pnpm add @cyrenex/di
 ```
 
 ## 核心概念
 
-| 概念       | 说明                                                          |
-| ---------- | ------------------------------------------------------------- |
-| `verse<T>` | 契约：一个带类型的字符串 key，没有实现                        |
-| `ripple`   | 实现：key + 依赖 + 工厂 + 生命周期模式，同时也可以当 token 用 |
-| `Cyrene`   | 容器：注册实现、解析实例、管理生命周期                        |
+| 概念        | 说明                                                          |
+| ----------- | ------------------------------------------------------------- |
+| `pebble<T>` | 契约：一个带类型的字符串 key，没有实现                        |
+| `ripple`    | 实现：key + 依赖 + 工厂 + 生命周期模式，同时也可以当 token 用 |
+| `Pond`      | 容器：注册实现、解析实例、管理生命周期                        |
 
-**key 就是身份。** `ripple("message", ...)`、`verse("message")` 和字符串 `"message"` 指向同一个 token，`app.resolve(Message)` 与 `app.resolve("message")` 返回的是同一个实例。建议用命名空间来避免撞名，例如 `"agent:config"`。
+**key 就是身份。** `ripple("message", ...)`、`pebble("message")` 和字符串 `"message"` 指向同一个 token，`app.resolve(Message)` 与 `app.resolve("message")` 返回的是同一个实例。建议用命名空间来避免撞名，例如 `"agent:config"`。
 
 ## 声明 ripple
 
 ```ts
 ripple(key, factory, options?)
 ripple(key, deps, factory, options?)
-ripple(verse, factory, options?)        // 为 verse 提供实现，返回值类型必须符合契约
-ripple(verse, deps, factory, options?)
+ripple(pebble, factory, options?)        // 为 pebble 提供实现，返回值类型必须符合契约
+ripple(pebble, deps, factory, options?)
 ```
 
-- `deps` 里可以混写 verse、ripple 和字符串，工厂按顺序收到解析好的值。
+- `deps` 里可以混写 pebble、ripple 和字符串，工厂按顺序收到解析好的值。
 - 工厂可以是 async 的。解析时会 `await` 工厂，依赖方拿到的永远是值，不是 Promise。
 - `options.mode` 默认是 `"singleton"`，见下文的[生命周期模式](#生命周期模式)。
 
@@ -77,7 +103,7 @@ class Agent {
 }
 
 const AgentRipple = ripple.class("agent", [Message, AgentConfig], Agent);
-const Logger = ripple.class(LoggerVerse, ConsoleLogger);
+const Logger = ripple.class(LoggerPebble, ConsoleLogger);
 ```
 
 构造函数参数和依赖列表的类型会在编译期校验，依赖顺序写错会直接报错。
@@ -86,14 +112,14 @@ const Logger = ripple.class(LoggerVerse, ConsoleLogger);
 
 ```ts
 await app.resolve(Agent); // 类型来自 ripple
-await app.resolve(AgentConfig); // 类型来自 verse
+await app.resolve(AgentConfig); // 类型来自 pebble
 await app.resolve("message"); // 类型来自 Registry，未声明时为 unknown
 ```
 
 想让纯字符串 key 也带类型，可以扩展 `Registry`。扩展后字符串 key 会有自动补全，`ripple` 的返回值也会按这里的声明做校验：
 
 ```ts
-declare module "@cyrenex/di" {
+declare module "@cyrenex/pondi" {
   interface Registry {
     message: string;
     "agent:config": AgentOptions;
@@ -109,7 +135,7 @@ declare module "@cyrenex/di" {
 2. 如果 token 本身是一个 ripple，就使用它自带的默认实现。
 3. 都没有就抛出 `MISSING_PROVIDER`，错误里带有完整的依赖路径，例如 `agent -> agent:config`。
 
-所以 ripple 不需要事先 `use` 就能直接 resolve；verse 和纯字符串则必须有某个容器提供实现。
+所以 ripple 不需要事先 `use` 就能直接 resolve；pebble 和纯字符串则必须有某个容器提供实现。
 
 ## 注册与覆盖
 
@@ -153,7 +179,7 @@ await app.resolve(Agent); // 父容器不受影响
 ## 异步初始化与资源释放
 
 ```ts
-import { asyncDispose, dispose, init } from "@cyrenex/di";
+import { asyncDispose, dispose, init } from "@cyrenex/pondi";
 
 class Db {
   #conn!: Connection;
@@ -183,7 +209,7 @@ class Db {
 
 ## 错误
 
-所有容器错误都是 `CyreneError`，带有 `code` 和依赖路径 `path`：
+所有容器错误都是 `PondError`，带有 `code` 和依赖路径 `path`：
 
 | code                  | 触发条件                                  |
 | --------------------- | ----------------------------------------- |
@@ -198,7 +224,7 @@ class Db {
 try {
   await app.resolve(Agent);
 } catch (error) {
-  if (error instanceof CyreneError && error.code === "MISSING_PROVIDER") {
+  if (error instanceof PondError && error.code === "MISSING_PROVIDER") {
     console.error(error.path); // ["agent", "agent:config"]
   }
 }
@@ -215,4 +241,22 @@ vp pack    # 构建
 
 ## License
 
-MIT
+[MIT](./LICENSE)
+
+## 特别感谢
+
+感谢所有为 pondi 做出贡献的人 ❤️
+
+<a href="https://github.com/YanChenBai/pondi/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=YanChenBai/pondi" />
+</a>
+
+## Star 历史
+
+<a href="https://star-history.dera.page/#YanChenBai/pondi&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=YanChenBai/pondi&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=YanChenBai/pondi&type=Date" />
+    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=YanChenBai/pondi&type=Date" />
+  </picture>
+</a>

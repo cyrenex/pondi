@@ -1,4 +1,4 @@
-import { CyreneError } from "./errors.ts";
+import { PondError } from "./errors.ts";
 import { asyncDispose, disposeValue, initValue, isDisposable } from "./lifecycle.ts";
 import { isRipple, keyOf } from "./token.ts";
 import type { Mode, Ripple, Token, TokenInput, Value } from "./token.ts";
@@ -11,11 +11,11 @@ interface Info {
   scoped: boolean;
 }
 
-export class Cyrene implements AsyncDisposable {
-  #parent: Cyrene | undefined;
+export class Pond implements AsyncDisposable {
+  #parent: Pond | undefined;
   /** Containers from root to this one. */
-  #chain: Cyrene[] = [this];
-  readonly #children = new Set<Cyrene>();
+  #chain: Pond[] = [this];
+  readonly #children = new Set<Pond>();
   readonly #registry = new Map<string, Ripple<unknown>>();
   /** Keys whose provider resolution is fixed because something resolved them through this container. */
   readonly #locked = new Set<string>();
@@ -38,7 +38,7 @@ export class Cyrene implements AsyncDisposable {
     this.#assertAlive();
     for (const item of items.flat()) {
       if (!isRipple(item)) {
-        throw new TypeError("Cyrene.use() expects ripples");
+        throw new TypeError("Pond.use() expects ripples");
       }
       this.#register(item);
     }
@@ -46,9 +46,9 @@ export class Cyrene implements AsyncDisposable {
   }
 
   /** Create a child container. Its `use()` may shadow providers of this container. */
-  fork(): Cyrene {
+  fork(): Pond {
     this.#assertAlive();
-    const child = new Cyrene();
+    const child = new Pond();
     child.#parent = this;
     child.#chain = [...this.#chain, child];
     this.#children.add(child);
@@ -77,13 +77,13 @@ export class Cyrene implements AsyncDisposable {
     const existing = this.#registry.get(provider.key);
     if (existing === provider) return;
     if (this.#locked.has(provider.key)) {
-      throw new CyreneError(
+      throw new PondError(
         "PROVIDER_LOCKED",
         `"${provider.key}" has already been resolved through this container and can no longer be provided here`,
       );
     }
     if (existing) {
-      throw new CyreneError(
+      throw new PondError(
         "DUPLICATE_PROVIDER",
         `A different provider for "${provider.key}" is already registered in this container; use fork() to shadow it`,
       );
@@ -102,7 +102,7 @@ export class Cyrene implements AsyncDisposable {
       this.#chain[0]!.#registry.set(key, token);
       return { provider: token, depth: 0 };
     }
-    throw new CyreneError("MISSING_PROVIDER", `No provider for "${key}"`, [...path, key]);
+    throw new PondError("MISSING_PROVIDER", `No provider for "${key}"`, [...path, key]);
   }
 
   /** Statically walk the dependency graph to find providers, cycles, and singleton homes. */
@@ -111,10 +111,7 @@ export class Cyrene implements AsyncDisposable {
     const memo = this.#analysis.get(key);
     if (memo) return memo;
     if (path.includes(key)) {
-      throw new CyreneError("CIRCULAR_DEPENDENCY", `Circular dependency on "${key}"`, [
-        ...path,
-        key,
-      ]);
+      throw new PondError("CIRCULAR_DEPENDENCY", `Circular dependency on "${key}"`, [...path, key]);
     }
     const { provider, depth } = this.#lookup(token, path);
     path.push(key);
@@ -128,7 +125,7 @@ export class Cyrene implements AsyncDisposable {
     } else {
       const scopedDep = deps.find((d) => d.scoped);
       if (mode === "singleton" && scopedDep) {
-        throw new CyreneError(
+        throw new PondError(
           "CAPTIVE_DEPENDENCY",
           `Singleton "${key}" cannot depend on scoped "${scopedDep.provider.key}"`,
           [...path, key],
@@ -169,7 +166,7 @@ export class Cyrene implements AsyncDisposable {
     await initValue(value);
     if (this.#disposing) {
       await disposeValue(value);
-      throw new CyreneError("DISPOSED", `Container was disposed while creating "${provider.key}"`);
+      throw new PondError("DISPOSED", `Container was disposed while creating "${provider.key}"`);
     }
     if (isDisposable(value)) this.#instances.push(value);
     return value;
@@ -198,10 +195,10 @@ export class Cyrene implements AsyncDisposable {
     this.#analysis.clear();
     if (this.#parent) this.#parent.#children.delete(this);
     if (errors.length === 1) throw errors[0];
-    if (errors.length > 1) throw new AggregateError(errors, "Failed to dispose Cyrene container");
+    if (errors.length > 1) throw new AggregateError(errors, "Failed to dispose Pond container");
   }
 
   #assertAlive(): void {
-    if (this.#disposing) throw new CyreneError("DISPOSED", "Container has been disposed");
+    if (this.#disposing) throw new PondError("DISPOSED", "Container has been disposed");
   }
 }

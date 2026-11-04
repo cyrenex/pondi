@@ -1,5 +1,5 @@
 import { expectTypeOf, test } from "vite-plus/test";
-import { asyncDispose, Cyrene, dispose, ripple, verse } from "../src/index.ts";
+import { asyncDispose, dispose, pebble, Pond, ripple } from "../src/index.ts";
 import type { Ripple } from "../src/index.ts";
 
 declare module "../src/token.ts" {
@@ -13,7 +13,7 @@ interface AgentOptions {
 }
 
 test("factory parameters are inferred from mixed dependencies", () => {
-  const AgentConfig = verse<AgentOptions>("agent:config");
+  const AgentConfig = pebble<AgentOptions>("agent:config");
   const Message = ripple("message", () => "hi");
   const Count = ripple("typed:count", async () => 1);
 
@@ -29,7 +29,7 @@ test("factory parameters are inferred from mixed dependencies", () => {
   expectTypeOf(ripple(AgentConfig, () => ({ url: "x" }))).toEqualTypeOf<Ripple<AgentOptions>>();
 
   // Type-only: never invoked at runtime.
-  const _check = (app: Cyrene) => {
+  const _check = (app: Pond) => {
     expectTypeOf(app.resolve(Agent)).resolves.toEqualTypeOf<{ send: () => string }>();
     expectTypeOf(app.resolve(AgentConfig)).resolves.toEqualTypeOf<AgentOptions>();
     expectTypeOf(app.resolve("typed:count")).resolves.toEqualTypeOf<number>();
@@ -39,15 +39,15 @@ test("factory parameters are inferred from mixed dependencies", () => {
 });
 
 test("implementations must match their contract", () => {
-  const AgentConfig = verse<AgentOptions>("agent:config");
-  // @ts-expect-error wrong shape for the verse
+  const AgentConfig = pebble<AgentOptions>("agent:config");
+  // @ts-expect-error wrong shape for the pebble
   ripple(AgentConfig, () => ({ url: 1 }));
   // @ts-expect-error registry says number
   ripple("typed:count", () => "nope");
 });
 
 test("ripple.class checks constructor parameters against dependencies", () => {
-  const AgentConfig = verse<AgentOptions>("agent:config");
+  const AgentConfig = pebble<AgentOptions>("agent:config");
   const Message = ripple("message", () => "hi");
   class Agent {
     constructor(
@@ -69,7 +69,7 @@ test("ripple.class checks constructor parameters against dependencies", () => {
   class BadConfig {
     url = 1;
   }
-  // @ts-expect-error class does not satisfy the verse
+  // @ts-expect-error class does not satisfy the pebble
   ripple.class(AgentConfig, BadConfig);
 });
 
@@ -82,5 +82,5 @@ test("lifecycle aliases type as the standard symbols", () => {
   }
   expectTypeOf<Res>().toExtend<AsyncDisposable>();
   expectTypeOf<SyncRes>().toExtend<Disposable>();
-  expectTypeOf<Cyrene>().toExtend<AsyncDisposable>();
+  expectTypeOf<Pond>().toExtend<AsyncDisposable>();
 });

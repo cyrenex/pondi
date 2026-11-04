@@ -1,13 +1,13 @@
 import { describe, expect, test } from "vite-plus/test";
-import { asyncDispose, Cyrene, CyreneError, dispose, init, ripple, verse } from "../src/index.ts";
+import { asyncDispose, dispose, init, pebble, Pond, PondError, ripple } from "../src/index.ts";
 
 interface AgentOptions {
   url: string;
 }
 
-const AgentConfig = verse<AgentOptions>("agent:config");
+const AgentConfig = pebble<AgentOptions>("agent:config");
 const agentConfigPlugin = (options: AgentOptions) => ripple(AgentConfig, () => options);
-const Message = ripple("message", () => "Hello, Cyrene!");
+const Message = ripple("message", () => "Hello, Pond!");
 
 function connection(log: string[], name: string) {
   return {
@@ -22,39 +22,39 @@ async function codeOf(promise: Promise<unknown>): Promise<string | undefined> {
   try {
     await promise;
   } catch (error) {
-    return error instanceof CyreneError ? error.code : undefined;
+    return error instanceof PondError ? error.code : undefined;
   }
   return undefined;
 }
 
 describe("resolve", () => {
   test("ripple acts as its own default provider", async () => {
-    const app = new Cyrene();
-    expect(await app.resolve(Message)).toBe("Hello, Cyrene!");
-    expect(await app.resolve("message")).toBe("Hello, Cyrene!");
+    const app = new Pond();
+    expect(await app.resolve(Message)).toBe("Hello, Pond!");
+    expect(await app.resolve("message")).toBe("Hello, Pond!");
   });
 
-  test("verse needs a provider and is satisfied by a plugin", async () => {
+  test("pebble needs a provider and is satisfied by a plugin", async () => {
     const Agent = ripple("agent", [Message, AgentConfig], (message, config) => ({
       text: `${message} @ ${config.url}`,
     }));
-    expect(await codeOf(new Cyrene().resolve(Agent))).toBe("MISSING_PROVIDER");
+    expect(await codeOf(new Pond().resolve(Agent))).toBe("MISSING_PROVIDER");
 
-    const app = new Cyrene().use(agentConfigPlugin({ url: "ws://x" }));
-    expect((await app.resolve(Agent)).text).toBe("Hello, Cyrene! @ ws://x");
+    const app = new Pond().use(agentConfigPlugin({ url: "ws://x" }));
+    expect((await app.resolve(Agent)).text).toBe("Hello, Pond! @ ws://x");
   });
 
   test("missing provider error carries the dependency path", async () => {
     const Agent = ripple("agent", [AgentConfig], (c) => c);
-    const error = await new Cyrene().resolve(Agent).catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(CyreneError);
-    expect((error as CyreneError).path).toEqual(["agent", "agent:config"]);
+    const error = await new Pond().resolve(Agent).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(PondError);
+    expect((error as PondError).path).toEqual(["agent", "agent:config"]);
   });
 
   test("string dependencies resolve by key", async () => {
     const Greeting = ripple("greeting", ["message"], (m) => `${String(m)}!`);
-    const app = new Cyrene().use(Message);
-    expect(await app.resolve(Greeting)).toBe("Hello, Cyrene!!");
+    const app = new Pond().use(Message);
+    expect(await app.resolve(Greeting)).toBe("Hello, Pond!!");
   });
 
   test("async factories and concurrent singleton resolution", async () => {
@@ -64,7 +64,7 @@ describe("resolve", () => {
       await new Promise((r) => setTimeout(r, 5));
       return { id: created };
     });
-    const app = new Cyrene();
+    const app = new Pond();
     const [a, b] = await Promise.all([app.resolve(Slow), app.resolve(Slow)]);
     expect(a).toBe(b);
     expect(created).toBe(1);
@@ -76,7 +76,7 @@ describe("resolve", () => {
       if (++attempt === 1) throw new Error("boom");
       return attempt;
     });
-    const app = new Cyrene();
+    const app = new Pond();
     await expect(app.resolve(Flaky)).rejects.toThrow("boom");
     expect(await app.resolve(Flaky)).toBe(2);
   });
@@ -84,8 +84,8 @@ describe("resolve", () => {
   test("detects circular dependencies", async () => {
     const A: ReturnType<typeof ripple> = ripple("a", ["b"], () => 1);
     const B = ripple("b", [A], () => 2);
-    const app = new Cyrene().use(B);
-    const error = (await app.resolve(A).catch((e: unknown) => e)) as CyreneError;
+    const app = new Pond().use(B);
+    const error = (await app.resolve(A).catch((e: unknown) => e)) as PondError;
     expect(error.code).toBe("CIRCULAR_DEPENDENCY");
     expect(error.path).toEqual(["a", "b", "a"]);
   });
@@ -94,13 +94,13 @@ describe("resolve", () => {
 describe("modes", () => {
   test("transient creates a new instance per resolve", async () => {
     const T = ripple("t", () => ({}), { mode: "transient" });
-    const app = new Cyrene();
+    const app = new Pond();
     expect(await app.resolve(T)).not.toBe(await app.resolve(T));
   });
 
   test("scoped is shared within a container but not across forks", async () => {
     const S = ripple("s", () => ({}), { mode: "scoped" });
-    const app = new Cyrene();
+    const app = new Pond();
     const child = app.fork();
     expect(await child.resolve(S)).toBe(await child.resolve(S));
     expect(await child.resolve(S)).not.toBe(await app.resolve(S));
@@ -108,7 +108,7 @@ describe("modes", () => {
 
   test("singleton is shared with forks when unaffected by shadowing", async () => {
     const Single = ripple("single", () => ({}));
-    const app = new Cyrene();
+    const app = new Pond();
     expect(await app.fork().resolve(Single)).toBe(await app.resolve(Single));
   });
 
@@ -116,25 +116,25 @@ describe("modes", () => {
     const S = ripple("s", () => 1, { mode: "scoped" });
     const T = ripple("t", [S], (s) => s, { mode: "transient" });
     const Single = ripple("single", [T], (t) => t);
-    expect(await codeOf(new Cyrene().resolve(Single))).toBe("CAPTIVE_DEPENDENCY");
+    expect(await codeOf(new Pond().resolve(Single))).toBe("CAPTIVE_DEPENDENCY");
   });
 
   test("scoped may depend on scoped and transient", async () => {
     const S = ripple("s", () => 1, { mode: "scoped" });
     const T = ripple("t", [S], (s) => s + 1, { mode: "transient" });
     const S2 = ripple("s2", [T], (t) => t + 1, { mode: "scoped" });
-    expect(await new Cyrene().resolve(S2)).toBe(3);
+    expect(await new Pond().resolve(S2)).toBe(3);
   });
 });
 
 describe("use and fork", () => {
   test("same ripple twice is a no-op, a different one throws", () => {
-    const app = new Cyrene().use(Message, [Message]);
-    expect(() => app.use(ripple("message", () => "other"))).toThrow(CyreneError);
+    const app = new Pond().use(Message, [Message]);
+    expect(() => app.use(ripple("message", () => "other"))).toThrow(PondError);
   });
 
   test("cannot provide a key after it was resolved", async () => {
-    const app = new Cyrene();
+    const app = new Pond();
     await app.resolve(Message);
     expect(() => app.use(ripple("message", () => "late"))).toThrow(/already been resolved/);
   });
@@ -142,7 +142,7 @@ describe("use and fork", () => {
   test("fork shadows providers and rebuilds affected singletons", async () => {
     const Agent = ripple("agent", [Message, AgentConfig], (m, c) => ({ text: `${m}@${c.url}` }));
     const Other = ripple("other", [AgentConfig], (c) => ({ url: c.url }));
-    const app = new Cyrene().use(agentConfigPlugin({ url: "prod" }));
+    const app = new Pond().use(agentConfigPlugin({ url: "prod" }));
 
     const prodAgent = await app.resolve(Agent);
     const prodOther = await app.resolve(Other);
@@ -158,9 +158,9 @@ describe("use and fork", () => {
   });
 
   test("parent cannot provide a key a child already resolved", async () => {
-    const app = new Cyrene();
+    const app = new Pond();
     await app.fork().resolve(Message);
-    expect(() => app.use(ripple("message", () => "late"))).toThrow(CyreneError);
+    expect(() => app.use(ripple("message", () => "late"))).toThrow(PondError);
   });
 });
 
@@ -171,7 +171,7 @@ describe("dispose", () => {
     const Repo = ripple("repo", [Db], () => connection(log, "repo"));
     const Service = ripple("service", [Repo], () => connection(log, "service"));
     {
-      await using app = new Cyrene();
+      await using app = new Pond();
       await app.resolve(Service);
     }
     expect(log).toEqual(["close service", "close repo", "close db"]);
@@ -183,7 +183,7 @@ describe("dispose", () => {
     const Session = ripple("session", [Db], () => connection(log, "session"), { mode: "scoped" });
     const Temp = ripple("temp", () => connection(log, "temp"), { mode: "transient" });
 
-    const app = new Cyrene();
+    const app = new Pond();
     const req = app.fork();
     await req.resolve(Session);
     await req.resolve(Temp);
@@ -213,7 +213,7 @@ describe("dispose", () => {
         throw new Error("c failed");
       },
     }));
-    const app = new Cyrene();
+    const app = new Pond();
     await app.resolve(A);
     await app.resolve(B);
     await app.resolve(C);
@@ -224,10 +224,10 @@ describe("dispose", () => {
   });
 
   test("disposed container rejects further use", async () => {
-    const app = new Cyrene();
+    const app = new Pond();
     await app.dispose();
     expect(await codeOf(app.resolve(Message))).toBe("DISPOSED");
-    expect(() => app.fork()).toThrow(CyreneError);
+    expect(() => app.fork()).toThrow(PondError);
     expect(app.dispose()).toBe(app.dispose());
   });
 });
@@ -247,28 +247,28 @@ describe("ripple.class", () => {
     const AgentRipple = ripple.class("agent", [Message, AgentConfig], Agent);
     const Plain = ripple.class("plain", class {}, { mode: "transient" });
     {
-      await using app = new Cyrene().use(agentConfigPlugin({ url: "ws://x" }));
+      await using app = new Pond().use(agentConfigPlugin({ url: "ws://x" }));
       const agent = await app.resolve(AgentRipple);
       expect(agent).toBeInstanceOf(Agent);
-      expect(agent.message).toBe("Hello, Cyrene!");
+      expect(agent.message).toBe("Hello, Pond!");
       expect(agent.config.url).toBe("ws://x");
       expect(await app.resolve(Plain)).not.toBe(await app.resolve(Plain));
     }
     expect(log).toEqual(["agent closed"]);
   });
 
-  test("implements a verse", async () => {
+  test("implements a pebble", async () => {
     interface Logger {
       log(msg: string): string;
     }
-    const LoggerVerse = verse<Logger>("logger");
+    const LoggerPebble = pebble<Logger>("logger");
     class ConsoleLogger implements Logger {
       log(msg: string) {
         return `[log] ${msg}`;
       }
     }
-    const app = new Cyrene().use(ripple.class(LoggerVerse, ConsoleLogger));
-    expect((await app.resolve(LoggerVerse)).log("hi")).toBe("[log] hi");
+    const app = new Pond().use(ripple.class(LoggerPebble, ConsoleLogger));
+    expect((await app.resolve(LoggerPebble)).log("hi")).toBe("[log] hi");
   });
 });
 
@@ -297,7 +297,7 @@ describe("lifecycle symbols", () => {
       return { db };
     });
     {
-      await using app = new Cyrene();
+      await using app = new Pond();
       const [a, b] = await Promise.all([app.resolve(Repo), app.resolve(DbRipple)]);
       expect(a.db).toBe(b);
     }
@@ -316,7 +316,7 @@ describe("lifecycle symbols", () => {
         log.push(`dispose ${this.id}`);
       }
     }
-    const app = new Cyrene();
+    const app = new Pond();
     const ConnRipple = ripple.class("conn", Conn);
     await expect(app.resolve(ConnRipple)).rejects.toThrow("init failed");
     expect(log).toEqual(["dispose 1"]);
@@ -335,6 +335,6 @@ describe("lifecycle symbols", () => {
       };
       return svc;
     });
-    expect((await new Cyrene().resolve(Svc)).started).toBe(true);
+    expect((await new Pond().resolve(Svc)).started).toBe(true);
   });
 });

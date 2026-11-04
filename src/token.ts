@@ -1,11 +1,11 @@
 declare const TYPE: unique symbol;
-const RIPPLE: unique symbol = Symbol("cyrene.ripple");
+const RIPPLE: unique symbol = Symbol("pondi.ripple");
 
 /**
  * Type registry for string keys. Augment it to get types for plain string tokens:
  *
  * ```ts
- * declare module "@cyrenex/di" {
+ * declare module "@cyrenex/pondi" {
  *   interface Registry { message: string }
  * }
  * ```
@@ -21,45 +21,45 @@ export interface RippleOptions {
 }
 
 /** A typed contract identified by its string key. Has no implementation. */
-export interface Verse<T> {
+export interface Pebble<T> {
   readonly key: string;
   /** Phantom field carrying the value type; absent at runtime. */
   readonly [TYPE]: T;
 }
 
-/** A verse with an implementation. */
-export interface Ripple<T> extends Verse<T> {
+/** A pebble with an implementation. */
+export interface Ripple<T> extends Pebble<T> {
   readonly deps: readonly Token[];
   readonly factory: (...args: any[]) => T | PromiseLike<T>;
   readonly mode: Mode;
   readonly [RIPPLE]: true;
 }
 
-export type Token = Verse<any> | string;
+export type Token = Pebble<any> | string;
 
 /** String keys with autocomplete for registered ones, while still accepting any string. */
 // oxlint-disable-next-line no-redundant-type-constituents
-export type TokenInput = Verse<any> | (keyof Registry & string) | (string & {});
+export type TokenInput = Pebble<any> | (keyof Registry & string) | (string & {});
 
 type KeyValue<K extends string> = K extends keyof Registry ? Registry[K] : unknown;
 
-export type Value<K> = K extends Verse<infer T> ? T : K extends string ? KeyValue<K> : never;
+export type Value<K> = K extends Pebble<infer T> ? T : K extends string ? KeyValue<K> : never;
 
 export type Values<D extends readonly Token[]> = { -readonly [I in keyof D]: Value<D[I]> };
 
 export type Factory<D extends readonly Token[], T> = (...args: Values<D>) => T | PromiseLike<T>;
 
-export function verse<T>(key: string): Verse<T> {
-  return Object.freeze({ key }) as Verse<T>;
+export function pebble<T>(key: string): Pebble<T> {
+  return Object.freeze({ key }) as Pebble<T>;
 }
 
 export function ripple<T>(
-  verse: Verse<T>,
+  pebble: Pebble<T>,
   factory: Factory<[], T>,
   options?: RippleOptions,
 ): Ripple<T>;
 export function ripple<T, const D extends readonly Token[]>(
-  verse: Verse<T>,
+  pebble: Pebble<T>,
   deps: D,
   factory: Factory<D, T>,
   options?: RippleOptions,
@@ -113,12 +113,12 @@ export function ripple(
 export type Constructor<D extends readonly Token[], T> = new (...args: Values<D>) => T;
 
 function rippleClass<T>(
-  verse: Verse<T>,
+  pebble: Pebble<T>,
   cls: Constructor<[], T>,
   options?: RippleOptions,
 ): Ripple<T>;
 function rippleClass<T, const D extends readonly Token[]>(
-  verse: Verse<T>,
+  pebble: Pebble<T>,
   deps: D,
   cls: Constructor<D, T>,
   options?: RippleOptions,

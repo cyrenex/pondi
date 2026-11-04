@@ -1,4 +1,4 @@
-export type CyreneErrorCode =
+export type PondErrorCode =
   | "DUPLICATE_PROVIDER"
   | "PROVIDER_LOCKED"
   | "MISSING_PROVIDER"
@@ -6,13 +6,13 @@ export type CyreneErrorCode =
   | "CAPTIVE_DEPENDENCY"
   | "DISPOSED";
 
-export class CyreneError extends Error {
-  override name = "CyreneError";
-  readonly code: CyreneErrorCode;
+export class PondError extends Error {
+  override name = "PondError";
+  readonly code: PondErrorCode;
   /** Dependency path leading to the error, outermost first. */
   readonly path: readonly string[];
 
-  constructor(code: CyreneErrorCode, message: string, path: readonly string[] = []) {
+  constructor(code: PondErrorCode, message: string, path: readonly string[] = []) {
     super(path.length > 0 ? `${message} (${path.join(" -> ")})` : message);
     this.code = code;
     this.path = path;

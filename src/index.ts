@@ -1,9 +1,9 @@
-export { Cyrene } from "./container.ts";
-export { CyreneError } from "./errors.ts";
+export { Pond } from "./container.ts";
+export { PondError } from "./errors.ts";
 export { asyncDispose, dispose, init } from "./lifecycle.ts";
 export type { Initializable } from "./lifecycle.ts";
-export type { CyreneErrorCode } from "./errors.ts";
-export { isRipple, keyOf, ripple, verse } from "./token.ts";
+export type { PondErrorCode } from "./errors.ts";
+export { pebble, ripple } from "./token.ts";
 export type {
   Constructor,
   Factory,
@@ -15,5 +15,5 @@ export type {
   TokenInput,
   Value,
   Values,
-  Verse,
+  Pebble,
 } from "./token.ts";
