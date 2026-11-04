@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write # push the version commit
+  pull-requests: write # open the release PR
+  id-token: write # npm trusted publishing (OIDC)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: voidzero-dev/setup-vp@v1.22.0
+        with:
+          node-version: "24"
+          cache: true
+      - run: vp check
+      - run: vp test
+      - uses: changesets/action@v1
+        with:
+          version: vp exec changeset version
+          publish: vp run release
+          title: "chore: release"
+          commit: "chore: release"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

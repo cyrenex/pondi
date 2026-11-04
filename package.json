@@ -2,15 +2,15 @@
   "name": "@cyrenex/pondi",
   "version": "0.0.0",
   "description": "Type-safe, string-keyed dependency injection with async factories and scoped disposal.",
-  "homepage": "https://github.com/YanChenBai/pondi#readme",
+  "homepage": "https://github.com/cyrenex/pondi#readme",
   "bugs": {
-    "url": "https://github.com/YanChenBai/pondi/issues"
+    "url": "https://github.com/cyrenex/pondi/issues"
   },
   "license": "MIT",
   "author": "byc <bycrxemail@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YanChenBai/pondi.git"
+    "url": "git+https://github.com/cyrenex/pondi.git"
   },
   "files": [
     "dist"
@@ -21,16 +21,21 @@
     "./package.json": "./package.json"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "vp pack",
     "dev": "vp pack --watch",
     "test": "vp test",
     "check": "vp check",
-    "prepublishOnly": "vp run build"
+    "prepublishOnly": "vp run build",
+    "changeset": "changeset",
+    "release": "changeset publish"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
     "@types/node": "^26.6.5",
     "typescript": "^7.0.2",
     "vite-plus": "catalog:"

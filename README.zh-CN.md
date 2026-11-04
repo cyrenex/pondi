@@ -3,14 +3,14 @@
 <p align="center">投下一颗石子，泛起一圈涟漪。以字符串为 key 的 TypeScript 类型安全依赖注入库。</p>
 
 <p align="center">
-  [<a href="https://github.com/YanChenBai/pondi/blob/master/README.md">English</a>] [<a href="https://www.npmjs.com/package/@cyrenex/pondi">npm</a>]
+  [<a href="https://github.com/cyrenex/pondi/blob/master/README.md">English</a>] [<a href="https://www.npmjs.com/package/@cyrenex/pondi">npm</a>]
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@cyrenex/pondi"><img src="https://img.shields.io/npm/v/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669"></a>
   <a href="https://www.npmjs.com/package/@cyrenex/pondi"><img src="https://img.shields.io/npm/dm/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669"></a>
   <a href="https://bundlephobia.com/package/@cyrenex/pondi"><img src="https://img.shields.io/bundlephobia/minzip/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669&label=minzip"></a>
-  <a href="https://github.com/YanChenBai/pondi/blob/master/LICENSE"><img src="https://img.shields.io/github/license/YanChenBai/pondi.svg?style=flat&colorA=080f12&colorB=1fa669"></a>
+  <a href="https://github.com/cyrenex/pondi/blob/master/LICENSE"><img src="https://img.shields.io/github/license/cyrenex/pondi.svg?style=flat&colorA=080f12&colorB=1fa669"></a>
 </p>
 
 > [!NOTE]
@@ -237,6 +237,7 @@ vp install # 安装依赖
 vp test    # 运行测试
 vp check   # 格式、lint、类型检查
 vp pack    # 构建
+vp run changeset # 为下一次发布记录变更
 ```
 
 ## License
@@ -247,16 +248,16 @@ vp pack    # 构建
 
 感谢所有为 pondi 做出贡献的人 ❤️
 
-<a href="https://github.com/YanChenBai/pondi/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=YanChenBai/pondi" />
+<a href="https://github.com/cyrenex/pondi/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=cyrenex/pondi" />
 </a>
 
 ## Star 历史
 
-<a href="https://star-history.dera.page/#YanChenBai/pondi&Date">
+<a href="https://star-history.dera.page/#cyrenex/pondi&Date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=YanChenBai/pondi&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=YanChenBai/pondi&type=Date" />
-    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=YanChenBai/pondi&type=Date" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-history.dera.page/svg?repos=cyrenex/pondi&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-history.dera.page/svg?repos=cyrenex/pondi&type=Date" />
+    <img alt="Star History Chart" src="https://star-history.dera.page/svg?repos=cyrenex/pondi&type=Date" />
   </picture>
 </a>

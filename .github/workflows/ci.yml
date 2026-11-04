@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: voidzero-dev/setup-vp@v1.22.0
+        with:
+          node-version: "24"
+          cache: true
+      - run: vp check
+      - run: vp test
+      - run: vp pack
