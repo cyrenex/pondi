@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@cyrenex/pondi"><img src="https://img.shields.io/npm/v/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669"></a>
   <a href="https://www.npmjs.com/package/@cyrenex/pondi"><img src="https://img.shields.io/npm/dm/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669"></a>
-  <a href="https://bundlephobia.com/package/@cyrenex/pondi"><img src="https://img.shields.io/bundlephobia/minzip/@cyrenex/pondi?style=flat&colorA=080f12&colorB=1fa669&label=minzip"></a>
+  <a href="https://bundlejs.com/?q=@cyrenex/pondi"><img src="https://deno.bundlejs.com/badge?q=@cyrenex/pondi&badge=detailed&badge-style=flat"></a>
   <a href="https://github.com/cyrenex/pondi/blob/master/LICENSE"><img src="https://img.shields.io/github/license/cyrenex/pondi.svg?style=flat&colorA=080f12&colorB=1fa669"></a>
 </p>
 
