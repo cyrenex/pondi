@@ -89,6 +89,7 @@ ripple(pebble, deps, factory, options?)
 - `deps` 里可以混写 pebble、ripple 和字符串，工厂按顺序收到解析好的值。
 - 工厂可以是 async 的。解析时会 `await` 工厂，依赖方拿到的永远是值，不是 Promise。
 - `options.mode` 默认是 `"singleton"`，见下文的[生命周期模式](#生命周期模式)。
+- `ripple.scoped(...)` 和 `ripple.transient(...)` 是 `ripple(..., { mode: "scoped" })` 和 `ripple(..., { mode: "transient" })` 的简写，参数与 `ripple` 相同，只是没有 `options`。对应的 class 版本是 `ripple.scoped.class(...)` 和 `ripple.transient.class(...)`。
 
 ### ripple.class
 

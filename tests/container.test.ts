@@ -125,6 +125,39 @@ describe("modes", () => {
     const S2 = ripple("s2", [T], (t) => t + 1, { mode: "scoped" });
     expect(await new Pond().resolve(S2)).toBe(3);
   });
+
+  test("ripple.scoped and ripple.transient set the mode", async () => {
+    const S = ripple.scoped("s", () => 1);
+    const T = ripple.transient("t", [S], (s) => ({ value: s + 1 }));
+    expect(S.mode).toBe("scoped");
+    expect(T.mode).toBe("transient");
+    expect(T.deps).toEqual([S]);
+
+    const app = new Pond();
+    expect(await app.resolve(T)).not.toBe(await app.resolve(T));
+    expect((await app.resolve(T)).value).toBe(2);
+
+    const Contract = pebble<number>("contract");
+    expect(ripple.scoped(Contract, () => 1).key).toBe("contract");
+    expect(() => ripple.transient("bad", [], undefined as never)).toThrow(TypeError);
+  });
+
+  test("ripple.scoped.class and ripple.transient.class set the mode", async () => {
+    class Box {
+      constructor(readonly value: number) {}
+    }
+    const S = ripple.scoped.class("s", class {});
+    const T = ripple.transient.class("t", [ripple("n", () => 1)], Box);
+    expect(S.mode).toBe("scoped");
+    expect(T.mode).toBe("transient");
+
+    const app = new Pond();
+    const t = await app.resolve(T);
+    expect(t).toBeInstanceOf(Box);
+    expect(t.value).toBe(1);
+    expect(await app.resolve(T)).not.toBe(t);
+    expect(await app.resolve(S)).toBe(await app.resolve(S));
+  });
 });
 
 describe("use and fork", () => {

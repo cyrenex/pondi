@@ -8,6 +8,8 @@ export type {
   Constructor,
   Factory,
   Mode,
+  ModeRipple,
+  ModeRippleClass,
   Registry,
   Ripple,
   RippleOptions,

@@ -89,6 +89,7 @@ ripple(pebble, deps, factory, options?)
 - `deps` may mix pebbles, ripples, and strings. The factory receives the resolved values in order.
 - Factories may be async. The container awaits them, so dependents always receive values, never promises.
 - `options.mode` defaults to `"singleton"`. See [Lifecycle Modes](#lifecycle-modes).
+- `ripple.scoped(...)` and `ripple.transient(...)` are shorthands for `ripple(..., { mode: "scoped" })` and `ripple(..., { mode: "transient" })`. They take the same arguments as `ripple`, minus `options`. Class variants are `ripple.scoped.class(...)` and `ripple.transient.class(...)`.
 
 ### ripple.class
 

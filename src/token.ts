@@ -150,8 +150,67 @@ function rippleClass(
   return ripple(target as string, deps, (...args: unknown[]) => new cls(...args), options);
 }
 
+/** `ripple` with a fixed mode, so it takes no options. */
+export interface ModeRipple {
+  <T>(pebble: Pebble<T>, factory: Factory<[], T>): Ripple<T>;
+  <T, const D extends readonly Token[]>(
+    pebble: Pebble<T>,
+    deps: D,
+    factory: Factory<D, T>,
+  ): Ripple<T>;
+  <K extends string, T extends KeyValue<K>>(key: K, factory: Factory<[], T>): Ripple<T>;
+  <K extends string, const D extends readonly Token[], T extends KeyValue<K>>(
+    key: K,
+    deps: D,
+    factory: Factory<D, T>,
+  ): Ripple<T>;
+  /** `ripple.class` with the same fixed mode. */
+  class: ModeRippleClass;
+}
+
+/** `ripple.class` with a fixed mode, so it takes no options. */
+export interface ModeRippleClass {
+  <T>(pebble: Pebble<T>, cls: Constructor<[], T>): Ripple<T>;
+  <T, const D extends readonly Token[]>(
+    pebble: Pebble<T>,
+    deps: D,
+    cls: Constructor<D, T>,
+  ): Ripple<T>;
+  <K extends string, T extends KeyValue<K>>(key: K, cls: Constructor<[], T>): Ripple<T>;
+  <K extends string, const D extends readonly Token[], T extends KeyValue<K>>(
+    key: K,
+    deps: D,
+    cls: Constructor<D, T>,
+  ): Ripple<T>;
+}
+
+function withMode(mode: Mode): ModeRipple {
+  const fn = (
+    target: Token,
+    depsOrFactory: readonly Token[] | ((...args: any[]) => unknown),
+    maybeFactory?: (...args: any[]) => unknown,
+  ) =>
+    typeof depsOrFactory === "function"
+      ? ripple(target as string, depsOrFactory, { mode })
+      : ripple(target as string, depsOrFactory, maybeFactory!, { mode });
+  // Classes are functions too, so discriminate on the deps array instead.
+  const cls = (
+    target: Token,
+    depsOrClass: readonly Token[] | (new (...args: any[]) => unknown),
+    maybeClass?: new (...args: any[]) => unknown,
+  ) =>
+    Array.isArray(depsOrClass)
+      ? rippleClass(target as string, depsOrClass, maybeClass!, { mode })
+      : rippleClass(target as string, depsOrClass as new () => unknown, { mode });
+  return Object.assign(fn, { class: cls }) as ModeRipple;
+}
+
 /** Like `ripple`, but instantiates a class with the resolved dependencies as constructor arguments. */
 ripple.class = rippleClass;
+/** Shorthand for `ripple(..., { mode: "scoped" })`. */
+ripple.scoped = withMode("scoped");
+/** Shorthand for `ripple(..., { mode: "transient" })`. */
+ripple.transient = withMode("transient");
 
 export function isRipple(value: unknown): value is Ripple<unknown> {
   return typeof value === "object" && value !== null && RIPPLE in value;
